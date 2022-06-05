@@ -1,0 +1,56 @@
+﻿@model User
+@{
+    ViewData["Title"] = "Register";
+}
+<style>
+.form-signin {
+    width: 100%;
+    max-width: 330px;
+    padding: 15px;
+    margin: auto;
+}
+
+.form-signin .form-floating:focus-within {
+    z-index: 2;
+}
+
+#Password,#Username {
+    margin-bottom: -1px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+#ConfirmPassword {
+    margin-bottom: 10px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+</style>
+<main class="form-signin">
+    @using (Html.BeginForm("Register", "Auth", FormMethod.Post))
+    {
+
+
+        <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+        <div class="form-floating">
+            <input type="text" class="form-control" name="Username" id="Username" placeholder="...">
+            <label for="floatingInput">Username</label>
+        </div>
+        <div class="form-floating">
+            <input type="password" class="form-control" name="Password" id="Password" placeholder="Password">
+            <label for="floatingPassword">Password</label>
+        </div>
+        <div class="form-floating">
+            <input type="password" class="form-control" name="ConfirmPassword" id="ConfirmPassword" placeholder="Confirm Password">
+            <label for="floatingPassword">Confirm Password</label>
+        </div>
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="text-danger my-1">
+                @Html.ValidationSummary(false)
+            </div>
+        }
+        <button class="btn-register w-100 btn btn-lg btn-primary" type="submit">Register</button>
+    }
+</main>

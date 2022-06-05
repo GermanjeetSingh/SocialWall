@@ -1,0 +1,65 @@
+﻿
+@{
+    ViewData["Title"] = "Post Idea - Social Wall";
+}
+<style>
+    .post-container{
+        display:flex;
+        justify-content:center;
+    }
+    .center{
+        min-width : 500px;
+    }
+</style>
+<div class="post-container">
+    <div class="center">
+        <p style="color:dodgerblue;font-weight:800;text-decoration:underline;margin-bottom:0px;">Inspire People!</p>
+        <p style="font-weight:200">Post your unique idea/thought</p>
+        @Html.TextArea("content", null, new
+        {
+            @id = "content",
+            @maxlength = "240",
+       @class = "form-control",
+            @rows = "10",
+            @onkeyup = "countChar()"
+        })
+        <p style="text-align:right;font-size:x-small;margin-top:5px">
+            <span id="charRemaining">240</span>/240 character(s) remaining.
+        </p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button class="btn btn-primary" id="btn-post" type="button" onclick="post()">Post</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function countChar() {
+        var len = document.getElementById("content").value.length;
+        $("#charRemaining").text(240 - len);
+    }
+
+    function post() {
+        $("#btn-post").prop('disabled', true);
+        var content = document.getElementById("content").value.trim();
+        fetch("http://localhost:5121/Home/Post", {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        })
+            .then(resp => {
+                $("#btn-post").prop('disabled', false);
+                if (resp.status == 201) {
+                    document.getElementById("content").value = "";
+                    countChar();
+                    swal("Good job!", "Your idea was posted successfully!", "success");
+                } else {
+                    swal("Oops!", "You cannot leave content empty!", "error");
+                }
+                
+            })
+            .catch(err => console.log(err));
+    }
+</script>   

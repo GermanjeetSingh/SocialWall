@@ -1,0 +1,269 @@
+﻿@model IEnumerable<Post>
+@{
+    ViewData["Title"] = "Home Page";
+}
+<style>
+    .no-idea {
+        font-weight: 200;
+        font-size: small;
+        text-align: center
+    }
+
+    .container {
+        display: flex;
+        justify-content: center
+    }
+
+    .post-like-comment-author {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 300;
+        font-size: small;
+    }
+
+    .posts {
+        max-width: 500px;
+    }
+
+    .post-by {
+        text-align: right;
+        font-size: smaller;
+        color: gray;
+    }
+
+    .post-content {
+        text-align: justify;
+        font-weight: 400;
+        font-size: small;
+    }
+
+    .post-like-comment-count {
+        font-size: smaller;
+        color: gray;
+    }
+
+    p {
+        margin-bottom: 0.5em;
+    }
+
+    .card {
+        padding: 1em;
+        padding-bottom: 0.5em;
+        margin-bottom: 0.5em;
+    }
+
+    hr {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+    }
+
+    .post-action-bt > button {
+        font-size: xx-small;
+    }
+
+    #post-comments > .comment:not(:last-child) {
+        border-bottom: 0.5px solid gainsboro;
+    }
+
+    .comment > p:not(:first-child) {
+        font-weight: 300;
+    }
+
+    .comment-content {
+        font-weight: 300;
+    }
+</style>
+
+@if (!Model.Any())
+{
+    <p class="no-idea">No Idea(s) posted in the system.</p>
+}
+<div class="container">
+    <div class="posts">
+        @foreach (var post in Model)
+        {
+            <div class="card">
+                <p class="post-content">
+                    @post.content
+                </p>
+                <div class="post-like-comment-author">
+                    <p class="post-like-comment-count">
+                        <span id="post-@post.ID-like-count">@post.Likes.Count Likes</span>
+                        &nbsp;
+                        <span id="post-@post.ID-comment-count">@post.Comments.Count Comments</span>
+                        &nbsp;
+                        <span>@post.createdOn.ToString("yyyy-dd-MM hh:mm tt")</span>
+                    </p>
+                    <p class="post-by">By - @post.ApplicationUser.UserName </p>
+                </div>
+
+                <hr />
+                <div>
+                    <div class="post-action-bt d-grid gap-2 d-md-flex justify-content-md-center">
+
+                        @if (post.isLikedByMe())
+                        {
+                            <button id="btn-@post.ID-like" onclick="toogleLike('@post.ID')" type="button"
+                                    class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-hand-thumbs-up-fill"></i> Liked
+                            </button>
+                        }
+                        else
+                        {
+                            <button id="btn-@post.ID-like" onclick="toogleLike('@post.ID')" type="button" class="btn btn-outline-secondary btn-sm"><i class="bi bi-hand-thumbs-up"></i> Like</button>
+                        }
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openModal('@post.ID')"><i class="bi bi-chat-square"></i> Comment</button>
+                        @if (User.Identity != null && post.ApplicationUser.UserName == User.Identity.Name)
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deletePost('@post.ID')"><i class="bi bi-trash"></i> Delete</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="comment-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staticBackdropLabel">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="post-comments">
+
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <div class="input-group input-group-sm mb-3">
+                    <input type="text" id="comment-content" class="form-control" placeholder="Enter Something...">
+                    <button class="btn btn-primary btn-sm" type="button" onclick="saveComment()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>let postID = -1;
+    document.getElementById('comment-modal').addEventListener('shown.bs.modal', function (event) {
+        fetchComments(postID);
+    })
+
+    document.getElementById('comment-modal').addEventListener('hidden.bs.modal', function (event) {
+        document.getElementById('post-comments').innerHTML = "";
+        postID = -1;
+    })
+
+    function fetchComments(id) {
+        if (id == -1)
+            return;
+        fetch(`http://localhost:5121/Home/Comment/${postID}`)
+            .then(resp => resp.json())
+            .then(result => {
+                var $elem = document.getElementById('post-comments');
+                $elem.innerHTML = "";
+                console.log(result);
+                if (result.length == 0) {
+                    var $p = document.createElement('p');
+                    $p.innerHTML = "<p class='post-by' style='text-align:center'>No comments on this post</p>";
+                    $elem.appendChild($p);
+                } else {
+                    result.forEach(comment => {
+                        var $div = document.createElement('div');
+                        $div.classList.add('comment');
+                        var $p = document.createElement('p');
+                        $p.classList.add('comment-content');
+                        $p.innerHTML = `${comment.content} &nbsp; <span class='post-by'>${comment.applicationUser.userName}</span>`;
+                        $div.appendChild($p);
+                        $elem.appendChild($div);
+                    })
+
+                }
+            })
+            .catch(err => console.log(err));
+    }
+
+    function openModal(id) {
+        var modal = new bootstrap.Modal(document.getElementById('comment-modal'), {});
+        postID = id;
+        modal.show();
+    }
+
+    function toogleLike(id) {
+
+        const likeTemplate = `<i class="bi bi-hand-thumbs-up-fill"></i> Liked`;
+        const unlikeTemplate = `<i class="bi bi-hand-thumbs-up"></i> Like`;
+        fetch(`http://localhost:5121/Home/Like/${id}`, { method: 'POST' })
+            .then(async resp => {
+                if (resp.status == 200) {
+                    if ($(`#btn-${id}-like`).hasClass("btn-outline-primary")) {
+                        $(`#btn-${id}-like`).removeClass("btn-outline-primary");
+                        $(`#btn-${id}-like`).addClass("btn-outline-secondary");
+                        $(`#btn-${id}-like`).html(unlikeTemplate);
+
+                    } else {
+
+                        $(`#btn-${id}-like`).removeClass("btn-outline-secondary");
+                        $(`#btn-${id}-like`).addClass("btn-outline-primary");
+                        $(`#btn-${id}-like`).html(likeTemplate);
+                    }
+                    const likesCount = await resp.text();
+                    $(`#post-${id}-like-count`).text(likesCount + " likes");
+
+                } else {
+                    swal("Oops!", "Unable to like the post!", "error");
+                }
+
+            })
+            .catch(err => console.log(err));
+    }
+
+    function saveComment() {
+        if (postID == -1)
+            return;
+        var content = document.getElementById("comment-content").value.trim();
+        if (!content)
+            return;
+        fetch(`http://localhost:5121/Home/Comment/${postID}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        })
+            .then(resp => {
+                fetchComments(postID);
+            })
+            .catch(err => console.log(err));
+    }
+
+    function deletePost(id) {
+        swal({
+            title: "Are you sure?",
+            text: "Once deleted, you will not be able to see this post and it's comments",
+            icon: "warning",
+            buttons: true,
+            dangerMode: true,
+        })
+            .then((willDelete) => {
+                if (willDelete) {
+                    fetch(`http://localhost:5121/Home/Post/${id}`, { method: 'DELETE' })
+                        .then(resp => {
+                            if (resp.status == 200)
+                                window.location.reload();
+                            else
+                                swal("Oops!", "Unable to delete post", "error");
+                        })
+                        .catch(err => console.log(err));
+                } 
+            });
+
+       
+    }</script>
